@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner & Generator Tiket - Kinarya Fiesta</title>
+    <!-- Library Barcode Scanner & Barcode Generator -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        /* Header & Logo Sekolah */
+        .school-header {
+            text-align: center;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .school-logo {
+            width: 70px;
+            height: 70px;
+            background: #0077b6;
+            color: white;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 10px rgba(0,119,182,0.3);
+        }
+        h2 {
+            color: #0f4c81;
+            margin: 5px 0;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        /* Menu Tab Selector */
+        .tab-menu {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: #e2e8f0;
+            color: #4a5568;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background: #0077b6;
+            color: white;
+        }
+        .section-panel {
+            display: none;
+        }
+        .section-panel.active {
+            display: block;
+        }
+
+        #reader {
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px dashed #0077b6;
+        }
+        .result-card {
+            margin-top: 20px;
+            padding: 18px;
+            border-radius: 10px;
+            background: #f8fafc;
+            border-left: 6px solid #0077b6;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .result-card.success {
+            background: #e6fffa;
+            border-left-color: #319795;
+        }
+        .result-card.error {
+            background: #fff5f5;
+            border-left-color: #e53e3e;
+        }
+        .info-item {
+            margin: 8px 0;
+            font-size: 15px;
+        }
+        .info-item strong {
+            display: inline-block;
+            width: 130px;
+            color: #4a5568;
+        }
+
+        /* Generator Section Styling */
+        .generator-box {
+            text-align: center;
+            padding: 15px;
+            background: #fdfdfe;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+        .generator-box input {
+            padding: 10px;
+            width: 70%;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            margin-right: 8px;
+            font-size: 14px;
+        }
+        .generator-box button {
+            padding: 10px 15px;
+            background: #319795;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #barcodeOutputContainer {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            display: inline-block;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        /* Denah Kursi */
+        .seat-map-container {
+            margin-top: 25px;
+            text-align: center;
+        }
+        .stage {
+            background: #0f4c81;
+            color: white;
+            padding: 8px;
+            font-weight: bold;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+        .grid-seats {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            justify-content: center;
+        }
+        .seat-box {
+            padding: 10px 5px;
+            font-size: 12px;
+            background: #edf2f7;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+        .seat-box.highlight {
+            background: #dd6b20 !important;
+            color: white;
+            transform: scale(1.1);
+            transition: transform 0.2s;
+            box-shadow: 0 0 12px rgba(221,107,32,0.6);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header dengan Identitas Sekolah -->
+    <div class="school-header">
+        <div class="school-logo">KG</div>
+        <h2>Kinarya Fiesta</h2>
+        <div class="subtitle">Sekolah Swasta Kinarya Grasia — 12 November 2026[cite: 1, 2]</div>
+    </div>
+
+    <!-- Navigasi Menu (Scanner / Buat Barcode Tiket) -->
+    <div class="tab-menu">
+        <button class="tab-btn active" onclick="switchTab('scanner')">📷 Scan Tiket Pintu</button>
+        <button class="tab-btn" onclick="switchTab('generator')">🏷️ Buat Barcode Tiket</button>
+    </div>
+
+    <!-- PANEL 1: SCANNER PINTU -->
+    <div id="scannerPanel" class="section-panel active">
+        <div id="reader"></div>
+        
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <input type="text" id="manualCode" placeholder="Atau ketik kode (misal: S01)" style="flex:1; padding:10px; border:1px solid #cbd5e0; border-radius:6px;">
+            <button onclick="checkTicket(document.getElementById('manualCode').value)" style="padding:10px 20px; background:#0077b6; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Cek</button>
+        </div>
+
+        <!-- Hasil Validasi -->
+        <div id="resultCard" class="result-card">
+            <h3 id="statusTitle" style="margin-top: 0;"></h3>
+            <div class="info-item"><strong>No. Tiket:</strong> <span id="resTicket">-</span></div>
+            <div class="info-item"><strong>Pemilik:</strong> <span id="resName">-</span></div>
+            <div class="info-item"><strong>Kategori:</strong> <span id="resCategory">-</span></div>
+            <div class="info-item"><strong>No. Kursi:</strong> <span id="resSeat">-</span></div>
+            <div class="info-item"><strong>Benefit:</strong> <span id="resBenefit">-</span></div>
+        </div>
+
+        <!-- Visualisasi Denah -->
+        <div class="seat-map-container">
+            <div class="stage">PANGGUNG UTAMA</div>
+            <div class="grid-seats" id="seatGrid"></div>
+        </div>
+    </div>
+
+    <!-- PANEL 2: GENERATOR BARCODE TIKET -->
+    <div id="generatorPanel" class="section-panel">
+        <div class="generator-box">
+            <p style="margin-top:0; color:#4a5568; font-size:14px;">Masukkan Kode Tiket untuk dicetak ke E-Tiket / Poster Orang Tua:</p>
+            <input type="text" id="genInput" value="S01" placeholder="Contoh: S01, E1, B01">
+            <button onclick="generateBarcode()">Generate</button>
+
+            <div id="barcodeOutputContainer">
+                <div style="font-size: 13px; font-weight: bold; margin-bottom: 5px; color:#0f4c81;">Kinarya Fiesta Ticket</div>
+                <svg id="barcodeCanvas"></svg>
+                <div id="barcodeTextLabel" style="font-weight: bold; margin-top: 4px; font-size: 14px;">S01</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Database Simulasi Tiket
+    const ticketDatabase = {
+        "S01": { name: "Bapak Budi (Wali Murid)", category: "VIP / Silver", seat: "S01", benefit: "Snack Box, Souvenir Eksklusif" },
+        "S02": { name: "Ibu Siti", category: "VIP / Silver", seat: "S02", benefit: "Snack Box, Souvenir Eksklusif" },
+        "E1":  { name: "Bapak Joko", category: "Emerald", seat: "E1", benefit: "VIP Seating, Snack Box, Merchandise" },
+        "B01": { name: "Ibu Rina", category: "Bronze", seat: "B01", benefit: "Snack Box Standar" }
+    };
+
+    const sampleSeats = ["S01", "S02", "S03", "S04", "S05", "S06", "E1", "E2", "B01", "B02", "B03", "B04"];
+
+    // Fungsi Tab Switcher
+    function switchTab(tabName) {
+        document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        if(tabName === 'scanner') {
+            document.getElementById('scannerPanel').classList.add('active');
+            event.target.classList.add('active');
+        } else {
+            document.getElementById('generatorPanel').classList.add('active');
+            event.target.classList.add('active');
+            generateBarcode(); // Generate otomatis saat tab dibuka
+        }
+    }
+
+    // Render Denah Kursi
+    function renderSeatMap(activeSeat = "") {
+        const grid = document.getElementById('seatGrid');
+        grid.innerHTML = "";
+        sampleSeats.forEach(seat => {
+            const div = document.createElement('div');
+            div.className = "seat-box" + (seat === activeSeat ? " highlight" : "");
+            div.innerText = seat;
+            grid.appendChild(div);
+        });
+    }
+
+    // Cek Tiket / Scan Result
+    function checkTicket(code) {
+        code = code.trim().toUpperCase();
+        const card = document.getElementById('resultCard');
+        const title = document.getElementById('statusTitle');
+        
+        card.style.display = "block";
+
+        if (ticketDatabase[code]) {
+            let data = ticketDatabase[code];
+            card.className = "result-card success";
+            title.innerText = "✔ TIKET VALID - SILAHKAN MASUK";
+            document.getElementById('resTicket').innerText = code;
+            document.getElementById('resName').innerText = data.name;
+            document.getElementById('resCategory').innerText = data.category;
+            document.getElementById('resSeat').innerText = data.seat;
+            document.getElementById('resBenefit').innerText = data.benefit;
+            renderSeatMap(data.seat);
+        } else {
+            card.className = "result-card error";
+            title.innerText = "✖ TIKET TIDAK TERDAFTAR";
+            document.getElementById('resTicket').innerText = code;
+            document.getElementById('resName').innerText = "-";
+            document.getElementById('resCategory').innerText = "-";
+            document.getElementById('resSeat').innerText = "-";
+            document.getElementById('resBenefit').innerText = "-";
+            renderSeatMap("");
+        }
+    }
+
+    // Buat Barcode Otomatis untuk Tiket
+    function generateBarcode() {
+        let val = document.getElementById('genInput').value.trim().toUpperCase();
+        if(!val) val = "S01";
+        document.getElementById('barcodeTextLabel').innerText = val;
+        try {
+            JsBarcode("#barcodeCanvas", val, {
+                format: "CODE128",
+                lineColor: "#0f4c81",
+                width: 2,
+                height: 50,
+                displayValue: false
+            });
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    // Inisialisasi Scanner Kamera
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", { fps: 10, qrbox: { width: 250, height: 100 } }, false
+    );
+    html5QrcodeScanner.render((decodedText) => {
+        document.getElementById('manualCode').value = decodedText;
+        checkTicket(decodedText);
+    });
+
+    renderSeatMap();
+</script>
+
+</body>
+</html>
